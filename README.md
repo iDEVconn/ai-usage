@@ -22,10 +22,19 @@ Zero-dependency types and range validation, shared by both subpaths:
 import { parseAiUsageRange, type AiUsageSummary } from '@idevconn/ai-usage';
 ```
 
+`AiUsageRecord` is the producer-side contract type: the shape an external
+event source (an LLM client/router, a request interceptor, anything
+instrumenting model calls) should emit per call. Nothing in this package
+consumes it — it is here so producers and `AiUsageDataSource`
+implementations agree on a field layout that aggregates cleanly into
+`AiUsageSummary`/`AiUsageTimeseries`.
+
 ## `@idevconn/ai-usage/server`
 
 Implement `AiUsageDataSource` against your own storage/aggregation and
-email/user enrichment, then register the module:
+email/user enrichment, then register the module. The short form below is
+enough when your data source has no injected dependencies of its own — see
+[below](#registering-a-data-source-that-has-its-own-dependencies) if it does:
 
 ```ts
 import { Module } from '@nestjs/common';
@@ -44,6 +53,83 @@ way you guard any other controller — e.g.
 `consumer.apply(MyAuthGuard).forRoutes(AdminAiUsageController)` in your
 `AppModule`'s `configure()`.
 
+### Implementing `AiUsageDataSource`
+
+The data-source interface and the DI token come from `./server`; the
+payload types (`AiUsageSummary`, `AiUsageTimeseries`, `AiUsageRange`) come
+from the **root** entry:
+
+```ts
+import { Injectable } from '@nestjs/common';
+import type { AiUsageDataSource } from '@idevconn/ai-usage/server';
+import type { AiUsageRange, AiUsageSummary, AiUsageTimeseries } from '@idevconn/ai-usage';
+import { Db } from './db.service';
+
+@Injectable()
+export class MyAiUsageDataSource implements AiUsageDataSource {
+  constructor(private readonly db: Db) {}
+
+  async getSummary(range: AiUsageRange, userId?: string): Promise<AiUsageSummary> {
+    const since = this.db.rangeToTimestamp(range);
+    const [totals, byProvider, byOperation, byKeySource, byUser] = await Promise.all([
+      this.db.aiUsageTotals(since, userId),
+      this.db.aiUsageGroupBy('provider', since, userId),
+      this.db.aiUsageGroupBy('operation', since, userId),
+      this.db.aiUsageGroupBy('key_source', since, userId),
+      this.db.aiUsageByUser(since, userId), // resolve emails here if you want them
+    ]);
+    return {
+      total_calls: totals.calls,
+      total_input_tokens: totals.input_tokens,
+      total_output_tokens: totals.output_tokens,
+      success_count: totals.success_count,
+      error_count: totals.error_count,
+      by_provider: byProvider,
+      by_operation: byOperation,
+      by_key_source: byKeySource,
+      by_user: byUser,
+    };
+  }
+
+  async getTimeseries(range: AiUsageRange, userId?: string): Promise<AiUsageTimeseries> {
+    const since = this.db.rangeToTimestamp(range);
+    return { points: await this.db.aiUsageDaily(since, userId) };
+  }
+}
+```
+
+### Registering a data source that has its own dependencies
+
+`forRoot` also accepts `useFactory`/`inject`/`useExisting`. The factory (or
+`useClass` target) is instantiated inside `AiUsageModule`'s own DI context,
+so anything it injects must be resolvable *there* — pass the providing
+module in `imports`:
+
+```ts
+@Module({
+  imports: [
+    AiUsageModule.forRoot({
+      imports: [DbModule], // makes Db resolvable inside AiUsageModule
+      inject: [Db],
+      useFactory: (db: Db) => new MyAiUsageDataSource(db),
+    }),
+  ],
+})
+export class AppModule {}
+```
+
+Without `imports: [DbModule]`, Nest cannot resolve `Db` and `forRoot`
+fails at bootstrap even though `DbModule` is imported by `AppModule`.
+
+### Route prefixes
+
+`AdminAiUsageController`'s routes are hardcoded under `/admin/ai-usage` and
+this package does not read your app's global prefix. If the host calls
+`app.setGlobalPrefix('api')` (or mounts Nest under a path), the real URLs
+become `/api/admin/ai-usage/*`, and the `fetchFn` you pass to the React
+hooks must add that prefix itself — `buildAiUsageQueryPath` always returns
+the unprefixed path.
+
 ## `@idevconn/ai-usage/react`
 
 ```tsx
@@ -59,6 +145,39 @@ function TotalCallsCard() {
   );
 }
 ```
+
+`useAiUsageTimeseries(range, userId, { fetchFn })` is the same shape and
+resolves to `AiUsageTimeseries`.
+
+### Cache keys and paths
+
+These are exported so a host can invalidate or prefetch these queries using
+the exact keys the hooks use, instead of re-deriving them:
+
+- `AI_USAGE_SUMMARY_QUERY_KEY(range, userId?)` — the `queryKey`
+  `useAiUsageSummary` registers under.
+- `AI_USAGE_TIMESERIES_QUERY_KEY(range, userId?)` — same, for
+  `useAiUsageTimeseries`.
+- `buildAiUsageQueryPath(base, range, userId?)` — the request path the hooks
+  hand to `fetchFn`, useful for prefetching or server-side rendering.
+
+```ts
+queryClient.invalidateQueries({ queryKey: AI_USAGE_SUMMARY_QUERY_KEY('7d', undefined) });
+```
+
+### Other exports
+
+- `AiUsageBreakdownTable` — headless wrapper that coalesces
+  `rows: Row[] | undefined` to `[]` and reports `isEmpty`, for rendering
+  `by_provider`/`by_operation`/`by_key_source`/`by_user` tables.
+- `AiUsageChartData` — the same for
+  `points: AiUsageTimeseriesPoint[] | undefined`, so charts get a stable
+  array and an explicit empty state.
+- `formatTokens(value)` — abbreviates token counts (`1.2K`, `3.4M`), `'—'`
+  for `undefined`.
+- `VALID_AI_USAGE_RANGES` — the `readonly AiUsageRange[]` of accepted range
+  values, for building range pickers; exported from the **root** entry
+  alongside `parseAiUsageRange`.
 
 ## License
 
