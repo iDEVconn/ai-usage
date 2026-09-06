@@ -1,17 +1,17 @@
 import type { ReactNode } from 'react';
 
-export interface AiUsageStatState {
-  value: number | string | undefined;
+export interface AiUsageStatState<V> {
+  value: V | undefined;
   isEmpty: boolean;
 }
 
-export interface AiUsageStatProps {
+export interface AiUsageStatProps<V> {
   loading: boolean;
-  value: number | string | undefined;
-  children: (state: AiUsageStatState) => ReactNode;
+  value: V | undefined;
+  children: (state: AiUsageStatState<V>) => ReactNode;
 }
 
-export function AiUsageStat({ loading, value, children }: AiUsageStatProps): ReactNode {
+export function AiUsageStat<V>({ loading, value, children }: AiUsageStatProps<V>): ReactNode {
   const isEmpty = !loading && (value === undefined || value === null);
   return children({ value: loading ? undefined : value, isEmpty });
 }
