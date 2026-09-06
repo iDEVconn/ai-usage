@@ -1,5 +1,7 @@
-import { DynamicModule, Module, Provider, Type } from '@nestjs/common';
-import { AI_USAGE_DATA_SOURCE, AiUsageDataSource } from './ai-usage-data-source';
+import { Module } from '@nestjs/common';
+import type { DynamicModule, Provider, Type } from '@nestjs/common';
+import { AI_USAGE_DATA_SOURCE } from './ai-usage-data-source';
+import type { AiUsageDataSource } from './ai-usage-data-source';
 import { AdminAiUsageController } from './admin-ai-usage.controller';
 
 export interface AiUsageModuleOptions {
