@@ -1,4 +1,4 @@
-export { formatNumber, formatTokens } from './format';
+export { formatNumber, formatTokens, formatCost } from './format';
 export {
   AI_USAGE_SUMMARY_QUERY_KEY,
   AI_USAGE_TIMESERIES_QUERY_KEY,

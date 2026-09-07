@@ -5,6 +5,10 @@ export type AiUsageRange = '24h' | '7d' | '30d' | '90d';
  * consume this type anywhere — it exists so producers (e.g. an LLM
  * client/router) can emit events in a shape any `AiUsageDataSource`
  * implementation can aggregate into `AiUsageSummary`/`AiUsageTimeseries`.
+ *
+ * `cost_usd` is optional: a producer fills it in when it knows the price
+ * (e.g. `@idevconn/llm-router`'s `withBudget`/`onCost` pricing table), but
+ * this package never requires or computes cost itself.
  */
 export interface AiUsageRecord {
   /** ISO 8601 timestamp. */
@@ -17,6 +21,8 @@ export interface AiUsageRecord {
   user_id: string;
   /** Host-defined string, e.g. 'platform' | 'byok'. */
   key_source: string;
+  /** Cost in USD, if the producer knows its pricing. Undefined, not 0, when unknown. */
+  cost_usd?: number;
 }
 
 export interface AiUsageBreakdownRow {
@@ -24,6 +30,7 @@ export interface AiUsageBreakdownRow {
   calls: number;
   input_tokens: number;
   output_tokens: number;
+  total_cost_usd?: number;
 }
 
 export interface AiUsageByUserRow {
@@ -33,6 +40,7 @@ export interface AiUsageByUserRow {
   calls: number;
   input_tokens: number;
   output_tokens: number;
+  total_cost_usd?: number;
 }
 
 export interface AiUsageSummary {
@@ -45,6 +53,8 @@ export interface AiUsageSummary {
   by_operation: AiUsageBreakdownRow[];
   by_key_source: AiUsageBreakdownRow[];
   by_user: AiUsageByUserRow[];
+  /** Sum of cost_usd across all records. Undefined if no record carried a cost, not 0. */
+  total_cost_usd?: number;
 }
 
 export interface AiUsageTimeseriesPoint {
@@ -53,6 +63,7 @@ export interface AiUsageTimeseriesPoint {
   calls: number;
   input_tokens: number;
   output_tokens: number;
+  cost_usd?: number;
 }
 
 export interface AiUsageTimeseries {
