@@ -29,6 +29,12 @@ consumes it — it is here so producers and `AiUsageDataSource`
 implementations agree on a field layout that aggregates cleanly into
 `AiUsageSummary`/`AiUsageTimeseries`.
 
+`cost_usd` is an optional field on `AiUsageRecord` (and the matching
+`total_cost_usd` on breakdown/summary/timeseries types): a producer fills it
+in when it knows its pricing (e.g. `@idevconn/llm-router`'s
+`withBudget`/`onCost`), and it's left `undefined` — not `0` — when the
+producer doesn't know cost.
+
 ## `@idevconn/ai-usage/server`
 
 Implement `AiUsageDataSource` against your own storage/aggregation and
@@ -198,6 +204,10 @@ queryClient.invalidateQueries({ queryKey: AI_USAGE_SUMMARY_QUERY_KEY('7d', undef
   array and an explicit empty state.
 - `formatTokens(value)` — abbreviates token counts (`1.2K`, `3.4M`), `'—'`
   for `undefined`.
+- `formatCost(value, opts?)` — formats `cost_usd` as currency (`$1.23`),
+  `'—'` for `undefined`; sub-cent amounts render with more decimals instead
+  of collapsing to `$0.00`. `opts.currency`/`opts.locale` override the
+  default `USD`/`en-US`.
 - `VALID_AI_USAGE_RANGES` — the `readonly AiUsageRange[]` of accepted range
   values, for building range pickers; exported from the **root** entry
   alongside `parseAiUsageRange`.
