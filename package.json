@@ -1,6 +1,6 @@
 {
   "name": "@idevconn/ai-usage",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Host-agnostic AI usage tracking: types, a NestJS admin module, and React hooks/headless components for an AI-usage admin dashboard.",
   "license": "Apache-2.0",
   "author": "iDEVconn",
