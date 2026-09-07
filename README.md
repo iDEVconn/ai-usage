@@ -48,10 +48,33 @@ export class AppModule {}
 ```
 
 Apply your own auth guard to the routes this module adds
-(`GET /admin/ai-usage/summary`, `GET /admin/ai-usage/timeseries`) the same
-way you guard any other controller — e.g.
-`consumer.apply(MyAuthGuard).forRoutes(AdminAiUsageController)` in your
-`AppModule`'s `configure()`.
+(`GET /admin/ai-usage/summary`, `GET /admin/ai-usage/timeseries`).
+`AiUsageModule.forRoot()` registers `AdminAiUsageController` itself (its
+`controllers` array isn't configurable), so you can't swap in a
+`@UseGuards()`-decorated subclass through it — the reliable way to guard
+these routes is a global guard.
+
+If you run a global `APP_GUARD` that reads metadata via `Reflector` (e.g.
+a CASL/RBAC setup), apply your metadata decorator imperatively to the
+imported class — decorators are just functions, nothing stops you calling
+one outside a class declaration:
+
+```ts
+import { AdminAiUsageController } from '@idevconn/ai-usage/server';
+import { CheckAbility } from './check-ability.decorator';
+
+CheckAbility('read', 'AiUsage')(AdminAiUsageController);
+```
+
+If your global guard has no per-route metadata to check (it just verifies
+a session/token for every request), it needs no wiring here at all — it
+already runs for these routes like any other controller.
+
+Do **not** reach for `consumer.apply(MyAuthGuard).forRoutes(...)` in a
+module's `configure()` — that's the **middleware** API. It expects a
+class with a `.use(req, res, next)` method, not a `CanActivate` guard.
+Passing a guard there compiles but fails at runtime (`.use is not a
+function`), and `canActivate()` never runs.
 
 ### Implementing `AiUsageDataSource`
 

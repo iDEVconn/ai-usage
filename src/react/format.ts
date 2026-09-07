@@ -1,6 +1,9 @@
-export function formatNumber(value: number | undefined): string {
+export function formatNumber(
+  value: number | undefined,
+  locale: Intl.LocalesArgument = 'en-US',
+): string {
   if (value === undefined) return '—';
-  return new Intl.NumberFormat('en-US').format(value);
+  return new Intl.NumberFormat(locale).format(value);
 }
 
 export function formatTokens(value: number | undefined): string {
