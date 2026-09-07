@@ -13,6 +13,11 @@ describe('formatNumber', () => {
   it('adds thousands separators', () => {
     expect(formatNumber(1234567)).toBe('1,234,567');
   });
+
+  it('accepts a locale override', () => {
+    expect(formatNumber(1234567, 'ru-RU')).toBe('1 234 567');
+    expect(formatNumber(1234567, 'he-IL')).toBe('1,234,567');
+  });
 });
 
 describe('formatTokens', () => {
