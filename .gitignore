@@ -13,3 +13,8 @@ coverage
 # env
 .env
 .env.local
+
+# ruflo / claude-flow local state
+.claude-flow
+.swarm
+ruvector.db
