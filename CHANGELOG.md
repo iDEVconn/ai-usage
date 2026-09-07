@@ -1,5 +1,17 @@
 # @idevconn/ai-usage
 
+## 0.3.0
+
+### Minor Changes
+
+- 594f7db: Add optional `cost_usd` field to `AiUsageRecord`, `AiUsageTimeseriesPoint`, and `total_cost_usd` to `AiUsageBreakdownRow`, `AiUsageByUserRow`, `AiUsageSummary`. Lets producers with pricing data (e.g. `@idevconn/llm-router`'s `withBudget`/`onCost`) report real $ cost; undefined for producers that don't know cost.
+- f0bbdf8: Add `formatCost(value, opts?)` to `@idevconn/ai-usage/react`, formatting a `cost_usd` value as currency. `undefined` renders `'—'`; amounts under a cent show 4 decimal places instead of collapsing to `$0.00`.
+
+### Patch Changes
+
+- 9eabfb9: Document the new `cost_usd?`/`total_cost_usd?` fields and `formatCost` in the README.
+- 44c69e2: Cover the new optional `cost_usd`/`total_cost_usd` fields in the root entry's shape-invariant test, including the omitted-field case for producers that don't know cost.
+
 ## 0.2.1
 
 ### Patch Changes
