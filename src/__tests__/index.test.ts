@@ -18,6 +18,7 @@ describe('root entry', () => {
       success: true,
       user_id: 'user-1',
       key_source: 'platform',
+      cost_usd: 0.0042,
     };
     const summary: AiUsageSummary = {
       total_calls: 1,
@@ -29,11 +30,29 @@ describe('root entry', () => {
       by_operation: [],
       by_key_source: [],
       by_user: [],
+      total_cost_usd: 0.0042,
     };
     const timeseries: AiUsageTimeseries = { points: [] };
 
     expect(record.provider).toBe('openai');
+    expect(record.cost_usd).toBe(0.0042);
     expect(summary.total_calls).toBe(1);
+    expect(summary.total_cost_usd).toBe(0.0042);
     expect(timeseries.points).toHaveLength(0);
+  });
+
+  it('accepts a record without cost_usd (producer that does not know cost)', () => {
+    const record: AiUsageRecord = {
+      timestamp: new Date().toISOString(),
+      provider: 'openai',
+      operation: 'chat',
+      input_tokens: 10,
+      output_tokens: 20,
+      success: true,
+      user_id: 'user-1',
+      key_source: 'byok',
+    };
+
+    expect(record.cost_usd).toBeUndefined();
   });
 });
