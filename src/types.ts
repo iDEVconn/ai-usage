@@ -37,6 +37,14 @@ export interface AiUsageByUserRow {
   user_id: string;
   /** Host fills this in (e.g. via its own auth service) — this package never looks up emails itself. */
   email: string | null;
+  /**
+   * Host-supplied display name (e.g. from a profiles table), if it has one.
+   * Optional and `null`-capable for the same reason `email` is: this package
+   * never looks anything up itself, and a host with no such data at all
+   * should omit the field entirely rather than send `undefined` through a
+   * serialization boundary as a stand-in for "doesn't have this."
+   */
+  full_name?: string | null;
   calls: number;
   input_tokens: number;
   output_tokens: number;
