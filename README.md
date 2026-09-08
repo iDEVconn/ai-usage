@@ -35,6 +35,11 @@ in when it knows its pricing (e.g. `@idevconn/llm-router`'s
 `withBudget`/`onCost`), and it's left `undefined` — not `0` — when the
 producer doesn't know cost.
 
+`AiUsageByUserRow` has an optional `full_name?: string | null` next to
+`email`: a host fills it in from its own profiles/auth data if it has one.
+Same convention as `email` — omit the field entirely if the host has no
+display-name data at all, rather than sending `undefined`.
+
 ## `@idevconn/ai-usage/server`
 
 Implement `AiUsageDataSource` against your own storage/aggregation and
@@ -105,7 +110,7 @@ export class MyAiUsageDataSource implements AiUsageDataSource {
       this.db.aiUsageGroupBy('provider', since, userId),
       this.db.aiUsageGroupBy('operation', since, userId),
       this.db.aiUsageGroupBy('key_source', since, userId),
-      this.db.aiUsageByUser(since, userId), // resolve emails here if you want them
+      this.db.aiUsageByUser(since, userId), // resolve emails/full_name here if you want them
     ]);
     return {
       total_calls: totals.calls,
